@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>BIGOLA — The Living Cosmos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -127,6 +127,22 @@ input[type=range]{accent-color:var(--cyan);width:120px}
 #soundBtn.on{background:linear-gradient(135deg,var(--violet),var(--cyan));border-color:transparent}
 
 footer{text-align:center;padding:60px 5vw;color:var(--muted);font-size:.85rem;position:relative;z-index:1;border-top:1px solid var(--border)}
+/* ---------- MOBILE ---------- */
+@media(max-width:700px){
+  nav{padding:14px 5vw}
+  .logo{font-size:1.1rem}
+  section{padding:70px 5vw}
+  #gravityCanvas{height:400px}
+  #constCanvas{height:320px}
+  .stats{gap:12px;margin-top:40px}
+  .stat{padding:18px}
+  .stat .num{font-size:1.5rem}
+  .hero-btns{gap:10px}
+  .btn{padding:13px 20px;font-size:.72rem}
+  .lab-toolbar{gap:8px}
+  .const-controls input{min-width:100%}
+  #soundBtn{width:48px;height:48px;bottom:16px;right:16px}
+}
 footer b{color:#fff}
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(90deg,var(--violet),var(--cyan));color:#fff;padding:14px 28px;border-radius:99px;font-weight:700;opacity:0;pointer-events:none;transition:all .4s;z-index:600;box-shadow:0 10px 40px rgba(124,58,237,.5)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}

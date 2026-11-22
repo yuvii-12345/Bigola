@@ -10,6 +10,10 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const lerp = (a, b, t) => a + (b - a) * t;
 const TAU = Math.PI * 2;
 
+/* ---------------- touch detection ---------------- */
+const IS_TOUCH = (window.matchMedia && matchMedia('(pointer:coarse)').matches) ||
+                 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 /* ---------------- DOM ---------------- */
 const $ = (id) => document.getElementById(id);
 const hud = $('hud'), menu = $('menu');
@@ -19,6 +23,7 @@ const questName = $('questName'), questFill = $('questFill'), questProgress = $(
 const bossWrap = $('bossWrap'), bossFill = $('bossFill'), bossName = $('bossName');
 const vignette = $('vignette'), flash = $('flash'), toastEl = $('toast');
 const hitmarker = $('hitmarker');
+const touchUI = $('touchUI'), novaBtnEl = $('novaBtn');
 
 bossWrap.style.display = 'none';
 
@@ -889,8 +894,118 @@ function updateHUD() {
   hpText.textContent = Math.ceil(player.hp);
   novaFill.style.transform = 'scaleX(' + (player.nova / 100) + ')';
   novaText.textContent = Math.floor(player.nova) + '%';
+  if (novaBtnEl) novaBtnEl.classList.toggle('charged', player.nova >= 100);
   xpFill.style.width = clamp(player.xp / player.xpNeed * 100, 0, 100) + '%';
   lvlText.textContent = 'LV ' + player.level;
+}
+
+/* ============================================================
+   TOUCH INPUT — virtual stick + drag-to-look (mobile)
+   ============================================================ */
+const touchMove = { x: 0, y: 0 };      // analog move vector, y forward
+let touchFire = false;
+const STICK_RADIUS = 44;
+let stickTouchId = null;
+
+function stickCenter() {
+  const base = $('stickBase');
+  if (!base) return { x: 120, y: innerHeight - 150 };
+  const r = base.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+function handleStick(t) {
+  const c = stickCenter();
+  let dx = t.clientX - c.x, dy = t.clientY - c.y;
+  const d = Math.hypot(dx, dy);
+  if (d > STICK_RADIUS) { dx = dx / d * STICK_RADIUS; dy = dy / d * STICK_RADIUS; }
+  touchMove.x = dx / STICK_RADIUS;
+  touchMove.y = -dy / STICK_RADIUS;
+  const nub = $('stickNub');
+  if (nub) nub.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+}
+function resetStick() {
+  touchMove.x = 0; touchMove.y = 0; stickTouchId = null;
+  const nub = $('stickNub');
+  if (nub) nub.style.transform = 'translate(-50%,-50%)';
+}
+
+const stickZone = $('stickZone');
+if (stickZone) {
+  stickZone.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (stickTouchId === null) { stickTouchId = t.identifier; handleStick(t); }
+    }
+  }, { passive: false });
+  stickZone.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) if (t.identifier === stickTouchId) handleStick(t);
+  }, { passive: false });
+  const stickEnd = (e) => {
+    for (const t of e.changedTouches) if (t.identifier === stickTouchId) resetStick();
+  };
+  stickZone.addEventListener('touchend', stickEnd);
+  stickZone.addEventListener('touchcancel', stickEnd);
+}
+
+/* look: drag anywhere on the right side of the screen */
+let lookTouchId = null, lookLastX = 0, lookLastY = 0;
+document.addEventListener('touchstart', (e) => {
+  if (state !== 'playing') return;
+  for (const t of e.changedTouches) {
+    const tag = (t.target && t.target.closest) ? t.target : null;
+    if (tag && (tag.closest('#touchBtns') || tag.closest('#pauseTouchBtn') || tag.closest('#stickZone') || tag.closest('.overlay') || tag.closest('button'))) continue;
+    if (t.clientX > innerWidth * 0.32 && lookTouchId === null) {
+      lookTouchId = t.identifier; lookLastX = t.clientX; lookLastY = t.clientY;
+      e.preventDefault();
+    }
+  }
+}, { passive: false });
+document.addEventListener('touchmove', (e) => {
+  if (state !== 'playing') return;
+  for (const t of e.changedTouches) {
+    if (t.identifier === lookTouchId) {
+      const dx = t.clientX - lookLastX, dy = t.clientY - lookLastY;
+      lookLastX = t.clientX; lookLastY = t.clientY;
+      player.yaw -= dx * 0.0042;
+      player.pitch = clamp(player.pitch - dy * 0.0042, -1.45, 1.45);
+      e.preventDefault();
+    }
+  }
+}, { passive: false });
+const lookEnd = (e) => { for (const t of e.changedTouches) if (t.identifier === lookTouchId) lookTouchId = null; };
+document.addEventListener('touchend', lookEnd);
+document.addEventListener('touchcancel', lookEnd);
+
+/* fire / nova / pause buttons */
+const fireBtn = $('fireBtn');
+if (fireBtn) {
+  const fireOn = (e) => { e.preventDefault(); touchFire = true; };
+  const fireOff = () => { touchFire = false; };
+  fireBtn.addEventListener('touchstart', fireOn, { passive: false });
+  fireBtn.addEventListener('touchend', fireOff);
+  fireBtn.addEventListener('touchcancel', fireOff);
+  fireBtn.addEventListener('mousedown', fireOn);
+  fireBtn.addEventListener('mouseup', fireOff);
+  fireBtn.addEventListener('mouseleave', fireOff);
+}
+if (novaBtnEl) {
+  novaBtnEl.addEventListener('touchstart', (e) => { e.preventDefault(); if (state === 'playing') novaBlast(); }, { passive: false });
+  novaBtnEl.addEventListener('click', (e) => { e.preventDefault(); if (state === 'playing') novaBlast(); });
+}
+const pauseTouchBtn = $('pauseTouchBtn');
+if (pauseTouchBtn) {
+  const togglePause = (e) => {
+    e.preventDefault();
+    if (state === 'playing') {
+      state = 'paused';
+      $('pauseOverlay').classList.remove('hidden');
+    } else if (state === 'paused') {
+      resumeGame();
+    }
+  };
+  pauseTouchBtn.addEventListener('touchstart', togglePause, { passive: false });
+  pauseTouchBtn.addEventListener('click', togglePause);
 }
 
 /* ============================================================
@@ -917,6 +1032,14 @@ function lockPointer() {
   const el = renderer.domElement;
   if (el.requestPointerLock) el.requestPointerLock();
 }
+function resumeGame() {
+  if (IS_TOUCH) {
+    state = 'playing';
+    $('pauseOverlay').classList.add('hidden');
+  } else {
+    lockPointer();
+  }
+}
 document.addEventListener('pointerlockchange', () => {
   const locked = !!document.pointerLockElement;
   if (!locked && state === 'playing') {
@@ -939,10 +1062,13 @@ function updatePlayer(dt, t) {
     player.hp = clamp(player.hp + 2.4 * dt, 0, player.maxHp);
   }
 
-  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
-  const str = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
-  const moving = fwd !== 0 || str !== 0;
-  const sprint = keys.ShiftLeft || keys.ShiftRight;
+  const stickMag = Math.hypot(touchMove.x, touchMove.y);
+  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchMove.y;
+  const str = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchMove.x;
+  const inputLen = Math.hypot(fwd, str);
+  const moving = inputLen > 0.14;
+  const analog = clamp(inputLen, 0, 1);                 // partial stick = analog walk
+  const sprint = keys.ShiftLeft || keys.ShiftRight || stickMag > 0.88;   // full stick = sprint
   const speed = player.speed * (sprint && moving ? 1.55 : 1);
 
   if (moving) {
@@ -950,10 +1076,10 @@ function updatePlayer(dt, t) {
     let dx = (-sin * fwd + cos * str);
     let dz = (-cos * fwd - sin * str);
     const len = Math.hypot(dx, dz) || 1;
-    dx /= len; dz /= len;
+    dx = dx / len * analog; dz = dz / len * analog;
     player.pos.x += dx * speed * dt;
     player.pos.z += dz * speed * dt;
-    player.walkPhase += dt * (sprint ? 13 : 8.6);
+    player.walkPhase += dt * (sprint ? 13 : 8.6) * (0.4 + analog * 0.6);
   }
   const dc = Math.hypot(player.pos.x, player.pos.z);
   if (dc > WORLD_R) { player.pos.x *= WORLD_R / dc; player.pos.z *= WORLD_R / dc; }
@@ -976,7 +1102,7 @@ function updatePlayer(dt, t) {
   if (muzzleGlow) muzzleGlow.material.opacity = Math.max(0, muzzleGlow.material.opacity - dt * 9);
   if (muzzleLight) muzzleLight.intensity = Math.max(0, muzzleLight.intensity - dt * 11);
 
-  if (mouseDown) tryShoot();
+  if (mouseDown || touchFire) tryShoot();
 }
 
 /* ============================================================
@@ -1053,7 +1179,7 @@ function startGame() {
   updateHUD();
   killsText.textContent = '0';
   showToast("WARDEN'S OATH — THIN THE HOLLOW");
-  lockPointer();
+  if (IS_TOUCH) { if (touchUI) touchUI.classList.remove('hidden'); } else { lockPointer(); }
 }
 function die() {
   if (state !== 'playing') return;
@@ -1063,6 +1189,7 @@ function die() {
   spawnBurst(player.pos.clone().setY(1.6), 0xff4040, 44, 12, 1.2, 6);
   $('deathStats').innerHTML = statChip(player.level, 'Level') + statChip(player.kills, 'Hollow Slain') + statChip(Math.round(player.runTime) + 's', 'Time');
   $('deathOverlay').classList.remove('hidden');
+  if (touchUI) touchUI.classList.add('hidden');
 }
 function victory() {
   if (state !== 'playing') return;
@@ -1071,9 +1198,10 @@ function victory() {
   if (document.pointerLockElement) document.exitPointerLock();
   $('victoryStats').innerHTML = statChip(player.level, 'Level') + statChip(player.kills, 'Hollow Slain') + statChip(Math.round(player.runTime) + 's', 'Clear Time');
   $('victoryOverlay').classList.remove('hidden');
+  if (touchUI) touchUI.classList.add('hidden');
 }
 $('startBtn').addEventListener('click', startGame);
-$('resumeBtn').addEventListener('click', () => lockPointer());
+$('resumeBtn').addEventListener('click', resumeGame);
 $('retryBtn').addEventListener('click', () => location.reload());
 $('againBtn').addEventListener('click', () => location.reload());
 
@@ -1110,6 +1238,7 @@ function onResize() {
   renderer.setSize(innerWidth, innerHeight);
 }
 addEventListener('resize', onResize);
+addEventListener('orientationchange', () => setTimeout(onResize, 90));
 
 /* ============================================================
    BOOT

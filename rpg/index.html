@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>BIGOLA: STELLARFALL — Shadow of Gargantua</title>
 <meta name="description" content="BIGOLA: STELLARFALL — a cinematic 3D action RPG. Bend fate on a colony world beneath the black hole Gargantua, gun down the Hollow, and silence their Herald.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕳️</text></svg>">
@@ -15,8 +18,8 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Space Grotesk',system-ui,sans-serif}
-#app{position:fixed;inset:0;z-index:0}
-#app canvas{display:block}
+#app{position:fixed;inset:0;z-index:0;touch-action:none}
+#app canvas{display:block;touch-action:none}
 .hidden{display:none !important}
 
 /* ============ OVERLAYS ============ */
@@ -119,6 +122,69 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .again-btn:hover{transform:scale(1.06)}
 .overlay-bg{background:rgba(3,0,20,.72)}
 
+/* ============ TOUCH CONTROLS (mobile) ============ */
+#touchUI{position:fixed;inset:0;z-index:35;pointer-events:none;font-family:'Orbitron'}
+#touchUI > *{pointer-events:auto}
+#stickZone{position:absolute;left:0;bottom:0;width:46%;height:62%;touch-action:none}
+#stickBase{position:absolute;left:64px;bottom:96px;width:118px;height:118px;border-radius:50%;border:2px solid rgba(160,140,255,.4);background:radial-gradient(circle at 50% 50%, rgba(30,22,64,.55), rgba(10,6,32,.7));box-shadow:0 0 30px rgba(124,58,237,.35), inset 0 0 24px rgba(34,211,238,.15);backdrop-filter:blur(4px);opacity:.9}
+#stickNub{position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 38% 35%, #c4b5fd, #7c3aed 70%);box-shadow:0 0 18px rgba(167,139,250,.8), inset 0 -3px 6px rgba(0,0,0,.4);transform:translate(-50%,-50%)}
+#touchBtns{position:absolute;right:26px;bottom:64px;display:flex;flex-direction:column;gap:16px;align-items:center}
+.tbtn{border:1px solid var(--border);border-radius:50%;color:#fff;font-family:'Orbitron';display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);user-select:none;-webkit-user-select:none;touch-action:none;transition:transform .12s}
+.tbtn:active{transform:scale(.92)}
+#fireBtn{width:96px;height:96px;font-size:1.6rem;background:radial-gradient(circle at 50% 40%, rgba(255,90,224,.5), rgba(60,8,54,.75));border-color:rgba(255,43,214,.55);box-shadow:0 0 34px rgba(255,43,214,.45), inset 0 0 18px rgba(255,43,214,.35)}
+#novaBtn{width:64px;height:64px;font-size:1.35rem;background:radial-gradient(circle at 50% 40%, rgba(34,211,238,.45), rgba(6,35,48,.78));border-color:rgba(34,211,238,.55);box-shadow:0 0 26px rgba(34,211,238,.4), inset 0 0 14px rgba(34,211,238,.35);opacity:.45}
+#novaBtn.charged{opacity:1;animation:btncharge 1.6s ease-in-out infinite}
+@keyframes btncharge{0%,100%{box-shadow:0 0 26px rgba(34,211,238,.45), inset 0 0 14px rgba(34,211,238,.4)}50%{box-shadow:0 0 46px rgba(34,211,238,.85), inset 0 0 22px rgba(34,211,238,.7)}}
+#pauseTouchBtn{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:44px;height:44px;border-radius:12px;font-size:.9rem;letter-spacing:.1em;background:rgba(10,6,32,.6);border:1px solid var(--border);color:var(--muted)}
+@media (pointer:fine){ #touchUI{display:none !important} }
+
+/* ============ ROTATE OVERLAY (portrait phones) ============ */
+#rotateOverlay{display:none;position:fixed;inset:0;z-index:90;background:radial-gradient(ellipse at 50% 40%, #150b38 0%, #030014 80%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+.phone-ico{font-size:4rem;animation:rotatephone 1.8s ease-in-out infinite;filter:drop-shadow(0 0 30px rgba(124,58,237,.8))}
+@keyframes rotatephone{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+#rotateOverlay h1{font-family:'Orbitron';font-weight:900;letter-spacing:.14em;font-size:1.4rem;margin:24px 0 10px;background:linear-gradient(90deg,var(--cyan),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+#rotateOverlay p{color:var(--muted);max-width:300px;line-height:1.6;font-size:.9rem}
+@media (pointer:coarse) and (orientation:portrait){ #rotateOverlay{display:flex} }
+
+/* ============ COMPACT HUD FOR LANDSCAPE PHONES ============ */
+@media (pointer:coarse) and (orientation:landscape), (max-height:500px){
+  .hud-tl{top:10px;left:14px}
+  .hud-brand{font-size:.58rem}
+  .hud-kills{font-size:.48rem}
+  .hud-tr{top:10px;right:14px;width:min(230px,34vw);padding:8px 12px;border-radius:10px}
+  #questName{font-size:.6rem}
+  .hud-bl{bottom:14px;left:14px;width:min(230px,36vw)}
+  #lvlText{font-size:1rem}
+  #lvlSub{font-size:.42rem}
+  .bar{height:9px}
+  #bossWrap{top:8px;width:min(430px,56vw)}
+  #bossName{font-size:.55rem}
+  #crosshair{width:38px;height:38px}
+  .overlay .panel{padding:26px 30px;border-radius:16px;max-width:92vw;max-height:92vh;overflow:auto}
+  .panel h1{font-size:1.4rem;margin-bottom:6px}
+  .panel p{font-size:.8rem;margin-bottom:12px}
+  .stat-chip{padding:8px 14px;min-width:84px}
+  .stat-chip .v{font-size:1.1rem}
+  .again-btn{padding:12px 30px;font-size:.7rem}
+  /* menu compact */
+  #menu{padding:0 12px;justify-content:center}
+  .game-badge{font-size:.5rem;margin-bottom:10px;padding:6px 16px}
+  .game-logo{font-size:clamp(2.2rem,9vh,3.4rem)}
+  .game-sub{font-size:clamp(.6rem,2vh,.85rem);margin:8px 0 2px}
+  .game-tag{font-size:.68rem;margin:6px auto 12px;line-height:1.45;max-width:520px}
+  .start-btn{padding:14px 40px;font-size:.85rem;letter-spacing:.2em}
+  .controls-grid{display:none}
+  .best-line{margin-top:10px;font-size:.55rem}
+  .menu-foot{display:none}
+  .load-note{margin-top:6px;font-size:.62rem}
+  .back-link{top:10px;left:12px;padding:7px 12px;font-size:.55rem}
+}
+
+/* touch-specific control legend vs keyboard legend (hidden on short landscape phones to save space) */
+.touch-controls{display:none}
+@media (pointer:coarse) and (min-height: 480px){ .desktop-controls{display:none} .touch-controls{display:flex} }
+
+
 /* loading fail */
 #loadError{background:rgba(3,0,20,.92)}
 #loadError h1{font-family:'Orbitron';color:#fb7185;margin-bottom:10px}
@@ -168,6 +234,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 <div id="flash"></div>
 <div id="toast"></div>
 
+<!-- TOUCH CONTROLS -->
+<div id="touchUI" class="hidden">
+  <div id="stickZone"><div id="stickBase"><div id="stickNub"></div></div></div>
+  <div id="touchBtns">
+    <button class="tbtn" id="novaBtn" aria-label="Nova Blast">✦</button>
+    <button class="tbtn" id="fireBtn" aria-label="Fire">◉</button>
+  </div>
+  <button class="tbtn" id="pauseTouchBtn" aria-label="Pause">❚❚</button>
+</div>
+
+<!-- ROTATE DEVICE -->
+<div id="rotateOverlay">
+  <div class="phone-ico">📱</div>
+  <h1>ROTATE YOUR DEVICE</h1>
+  <p>STELLARFALL is built for landscape. Turn your phone sideways — the battle waits for no one.</p>
+</div>
+
 <!-- MAIN MENU -->
 <div id="menu" class="overlay">
   <a class="back-link" href="../">← Bigola</a>
@@ -177,7 +260,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   <p class="game-tag">2187. Beneath the shadow of <b>Gargantua</b> — the black hole that chews the sky — the colony of <b>Kharon-7</b> has gone silent. The <b>Hollow</b> came through. You are <b>Warden Rook</b>, last sentinel of the Bigola Wardens. Hold the line. <b>Nothing survives Gargantua — except what it sends back.</b></p>
   <button class="start-btn" id="startBtn" disabled>Summoning Gargantua…</button>
   <div class="load-note" id="loadNote">Loading gravitational lensing engine…</div>
-  <div class="controls-grid">
+  <div class="controls-grid desktop-controls">
     <div class="ctrl"><kbd>W A S D</kbd> Move</div>
     <div class="ctrl"><kbd>MOUSE</kbd> Look</div>
     <div class="ctrl"><kbd>LMB</kbd> Fire</div>
@@ -185,8 +268,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
     <div class="ctrl"><kbd>F</kbd> Nova Blast</div>
     <div class="ctrl"><kbd>ESC</kbd> Pause</div>
   </div>
+  <div class="controls-grid touch-controls">
+    <div class="ctrl"><kbd>◉ LEFT STICK</kbd> Move — push to the edge to Sprint</div>
+    <div class="ctrl"><kbd>☰ RIGHT SIDE</kbd> Drag to aim &amp; look</div>
+    <div class="ctrl"><kbd>◉ FIRE</kbd> Hold to shoot</div>
+    <div class="ctrl"><kbd>✦ NOVA</kbd> Nova Blast when charged</div>
+  </div>
   <div class="best-line" id="bestLine">UNTESTED WARDEN</div>
-  <div class="menu-foot">Desktop + mouse recommended &nbsp;•&nbsp; Headphones advised &nbsp;•&nbsp; No two runs alike</div>
+  <div class="menu-foot">Landscape mode on mobile &nbsp;•&nbsp; Headphones advised &nbsp;•&nbsp; No two runs alike</div>
 </div>
 
 <!-- PAUSE -->
