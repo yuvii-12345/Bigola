@@ -320,7 +320,7 @@ const PALETTE = ['#22d3ee','#f472b6','#fbbf24','#a78bfa','#34d399','#fb7185','#6
 
 function sizeGravity(){
   const r = gCanvas.getBoundingClientRect();
-  gCanvas.width = r.width; gCanvas.height = 560;
+  gCanvas.width = r.width; gCanvas.height = innerWidth <= 700 ? 400 : 560;
 }
 sizeGravity(); addEventListener('resize', sizeGravity);
 
@@ -468,7 +468,7 @@ const c = cCanvas.getContext('2d');
 let constPoints = [], constStars = [];
 function sizeConst(){
   const r = cCanvas.getBoundingClientRect();
-  cCanvas.width = r.width; cCanvas.height = 440;
+  cCanvas.width = r.width; cCanvas.height = innerWidth <= 700 ? 320 : 440;
   constStars = Array.from({length:90},()=>({x:Math.random()*cCanvas.width,y:Math.random()*cCanvas.height,r:Math.random()*1.2+.4,p:Math.random()*7}));
 }
 sizeConst(); addEventListener('resize', sizeConst);
